@@ -1,26 +1,7 @@
 // TODO: I think fees are subtracted from cap gains total
-// TODO: use puppeteer to navigate automatically
 // TODO: list cost basis
 // TODO: is it a short-term or long-term cap gains? (less or more than one year)
 
-// const normalizeNumber = (num) => num.replace('-', '').replace('+', '').replace('$', '').replace(',', '');
-//
-// const allRowsHtmlEl = [...document.querySelectorAll('div:not(.portfolio-tablelist-wrapper) > .cmc-table > tbody > tr')];
-//
-// const extractedData = allRowsHtmlEl.map((rowEl) => {
-//   const type = rowEl.querySelector('p').textContent;
-//   const date = rowEl.querySelector('p:nth-child(2)').textContent.split(',').slice(0, 2).join(',');
-//   const price = normalizeNumber(rowEl.querySelector('td:nth-child(2) > p').textContent);
-//   const amountOfToken = normalizeNumber(
-//     rowEl.querySelector('td:nth-child(3) p:nth-child(2)').textContent.split(' ')[0],
-//   );
-//   const tokenSymbol = rowEl.querySelector('td:nth-child(3) p:nth-child(2)').textContent.split(' ')[1];
-//   const fee =
-//     rowEl.querySelector('td:nth-child(4)').textContent === '--'
-//       ? '0'
-//       : normalizeNumber(rowEl.querySelector('td:nth-child(4)').textContent);
-//   return [type, date, price, amountOfToken, tokenSymbol, fee];
-// });
 //
 // const tokenBuys = {};
 //
@@ -64,24 +45,15 @@
 // console.log(csvData);
 // window.open(encodedUri);
 
-import { loadWebsocketEndpoint } from './websocket/storage';
-import puppeteer from 'puppeteer';
-
-const main = async () => {
-  console.log('MAIN RUN');
-  const browserWSEndpoint = await loadWebsocketEndpoint();
-  console.log(browserWSEndpoint);
-  const browser = await puppeteer.connect({ browserWSEndpoint });
-  const page = await browser.newPage();
-
-  await page.goto('https://developers.google.com/web/');
-  await browser.close();
-};
+import { scrapeCoinMarketCap } from './scraper';
+import { parseScrapedData } from './parser';
 
 (async () => {
   try {
-    await main();
+    const rawEntries = await scrapeCoinMarketCap();
+    const parsedEntries = parseScrapedData(rawEntries);
+    console.log(parsedEntries);
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 })();
