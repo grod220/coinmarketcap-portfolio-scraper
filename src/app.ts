@@ -1,8 +1,8 @@
 // TODO: I think fees are subtracted from cap gains total
 // TODO: list cost basis
 // TODO: is it a short-term or long-term cap gains? (less or more than one year)
+//        aka Duration held
 
-//
 // const tokenBuys = {};
 //
 // for (let i = extractedData.length - 1; i >= 0; i--) {
@@ -47,12 +47,15 @@
 
 import { scrapeCoinMarketCap } from './scraper';
 import { parseScrapedData } from './parser';
+import { calculateCapitalGains } from './cap-gains';
 
 (async () => {
   try {
     const rawEntries = await scrapeCoinMarketCap();
     const parsedEntries = parseScrapedData(rawEntries);
-    console.log(parsedEntries);
+    const entriesWithGains = calculateCapitalGains(parsedEntries);
+    console.log(entriesWithGains);
+    // writeToCsv()
   } catch (e) {
     console.error(e);
   }

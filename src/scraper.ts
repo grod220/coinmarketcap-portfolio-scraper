@@ -1,4 +1,4 @@
-import { loadWebsocketEndpoint } from './websocket/storage';
+import { loadWebsocketEndpoint } from './storage';
 import puppeteer from 'puppeteer';
 
 type OptionalStr = string | null | undefined;
