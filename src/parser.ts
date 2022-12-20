@@ -17,7 +17,7 @@ export interface ParsedEntry {
 }
 
 const parseNumStr = (num: string) => {
-  if (num == '--') return 0;
+  if (num == 'No fee') return 0;
   return parseFloat(num.replace('-', '').replace('+', '').replace('$', '').replace(',', ''));
 };
 
@@ -34,12 +34,12 @@ export const parseScrapedData = (rawEntries: RawEntry[]): ParsedEntry[] => {
 
     return {
       date: parse(entry.date, 'MMM d, y, h:m a', new Date()),
+      token: entry.token,
       tokenSymbol: entry.tokenSymbol,
       price: parseNumStr(entry.price),
       fee: parseNumStr(entry.fee),
       amountOfToken: parseNumStr(entry.amountOfToken),
       type: entry.type === 'Buy' ? ActionType.BUY : ActionType.SELL,
-      token: entry.token,
     };
   });
 };

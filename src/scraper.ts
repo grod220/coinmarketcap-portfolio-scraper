@@ -17,7 +17,6 @@ export interface RawEntry {
 enum SELECTOR {
   TABLE_ROW = 'table > tbody > tr',
   BACK_BUTTON = '.cmc-body-wrapper div:nth-child(1) > div > div > button',
-  BALANCE_TITLE = '.cmc-body-wrapper > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div > div > div > p',
   TRASH_CAN_BUTTON = 'table > tbody > tr:nth-child(1) > td:nth-child(5) > div > button:nth-child(2)',
 }
 
@@ -32,33 +31,48 @@ export const scrapeCoinMarketCap = async (): Promise<RawEntry[]> => {
     return elements.length;
   });
 
-  let allActions = [];
+  let allActions: RawEntry[][] = [];
 
   // n-th child starts at 1
   for (let i = 1; i <= rowCount; i++) {
     await page.click(`${SELECTOR.TABLE_ROW}:nth-child(${i})`);
     await page.waitForSelector(SELECTOR.TRASH_CAN_BUTTON);
+    await page.waitForNetworkIdle();
 
-    const result = await page.evaluate((SELECTOR) => {
+    const result = await page.evaluate(() => {
       // select first table (more than one in page)
       const table = Array.from(document.querySelectorAll('table'))[0];
-      const rows = Array.from(table.querySelectorAll('tr'));
-      return rows.slice(1).map((row) => {
-        return {
-          token: document.querySelector(SELECTOR.BALANCE_TITLE)?.textContent?.split(' Balance')[0],
-          type: row.querySelector('p')?.textContent,
-          date: row.querySelector('p:nth-child(2)')?.textContent,
-          price: row.querySelector('td:nth-child(2) > p')?.textContent,
-          amountOfToken: row
-            .querySelector('td:nth-child(3) p:nth-child(2)')
-            ?.textContent?.split(' ')[0],
-          tokenSymbol: row
-            .querySelector('td:nth-child(3) p:nth-child(2)')
-            ?.textContent?.split(' ')[1],
-          fee: row.querySelector('td:nth-child(4)')?.textContent,
+      // Skip first row (headers)
+      const rows = Array.from(table.querySelectorAll('tr')).slice(1);
+
+      const res = [];
+      for (const row of rows) {
+        const token = document
+          .querySelector(
+            '.cmc-body-wrapper > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div > div > div > p',
+          )
+          ?.textContent?.split(' (')[0];
+        row.click();
+        const matches = document
+          .querySelector('.open > div > div > div:nth-child(4) > div.content')
+          ?.textContent?.match(/(?<amount>[\d.]+)(?<symbol>[A-Za-z]+)/);
+        const data = {
+          token,
+          type: document.querySelector('.content > div')?.textContent,
+          date: document.querySelector('.open > div > div > div:nth-child(2) div.content')
+            ?.textContent,
+          tokenSymbol: matches?.groups?.symbol,
+          amountOfToken: matches?.groups?.amount,
+          price: document.querySelector('.open > div > div > div:nth-child(3) > div.content')
+            ?.textContent,
+          fee: document.querySelector('.open > div > div > div:nth-child(5) > div.content')
+            ?.textContent,
         };
-      });
-    }, SELECTOR);
+        (document.querySelector('.open') as HTMLElement)?.click();
+        res.push(data);
+      }
+      return res;
+    });
 
     allActions.push(result);
 

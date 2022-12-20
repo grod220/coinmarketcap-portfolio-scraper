@@ -1,7 +1,7 @@
 import { ActionType, ParsedEntry } from './parser';
 import { differenceInDays } from 'date-fns';
 
-type EntriesWithGains = (BuyEntry | SellEntry)[];
+export type EntriesWithGains = (BuyEntry | SellEntry)[];
 
 interface BuyEntry {
   tokenSymbol: string;
@@ -95,7 +95,6 @@ const segmentBuys = (
 
 export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWithGains => {
   const tokenBuys = getTokenBuys(parsedEntries);
-
   const entriesWithGains: EntriesWithGains = [];
 
   for (const entry of parsedEntries) {
