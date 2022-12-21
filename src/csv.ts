@@ -1,22 +1,49 @@
 import { EntriesWithGains } from './cap-gains';
+import { ActionType } from './parser';
+import { format } from 'date-fns';
+import { writeFile } from 'fs/promises';
 
 const headings = [
+  'token',
+  'symbol',
   'type',
   'date',
   'price',
-  'amountOfToken',
-  'tokenSymbol',
+  'token amount',
   'fee',
-  'capitalGain/Loss',
+  'capital gain/loss',
+  'days held',
 ];
-// const encodedUri = encodeURI(`data:text/csv;charset=utf-8,${csvData}`);
-// console.log(csvData);
-// window.open(encodedUri);
 
-export const writeToCsv = (entries: EntriesWithGains) => {
+export const writeToCsv = async (entries: EntriesWithGains) => {
   const data: (string | number)[][] = [headings];
 
-  const csvData = [headings, ...entries]
-    .map((row) => row.map((i) => `"${i}"`).join(','))
-    .join('\n');
+  for (const entry of entries) {
+    if (entry.type === ActionType.BUY) {
+      data.push([
+        entry.token,
+        entry.tokenSymbol,
+        entry.type,
+        format(entry.date, 'MMM-d-y h:m a'),
+        entry.buyPrice,
+        entry.amountOfToken,
+        entry.fees,
+      ]);
+    } else {
+      data.push([
+        entry.token,
+        entry.tokenSymbol,
+        entry.type,
+        format(entry.date, 'MMM-d-y h:m a'),
+        entry.sellPrice,
+        entry.amountOfToken,
+        entry.fees,
+        entry.capitalGainOrLoss,
+        entry.daysHeld,
+      ]);
+    }
+  }
+
+  const csvFormat = data.map((row) => row.join(',')).join('\n');
+  await writeFile('./report.csv', csvFormat);
 };

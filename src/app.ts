@@ -8,7 +8,8 @@ import { writeToCsv } from './csv';
     const rawEntries = await scrapeCoinMarketCap();
     const parsedEntries = parseScrapedData(rawEntries);
     const entriesWithGains = calculateCapitalGains(parsedEntries);
-    writeToCsv(entriesWithGains);
+    await writeToCsv(entriesWithGains);
+    console.log('Success 🎉. See output: "./report.csv".');
   } catch (e) {
     console.error(e);
   }

@@ -4,6 +4,7 @@ import { differenceInDays } from 'date-fns';
 export type EntriesWithGains = (BuyEntry | SellEntry)[];
 
 interface BuyEntry {
+  token: string;
   tokenSymbol: string;
   type: ActionType.BUY;
   date: Date;
@@ -13,6 +14,7 @@ interface BuyEntry {
 }
 
 interface SellEntry {
+  token: string;
   tokenSymbol: string;
   type: ActionType.SELL;
   date: Date;
@@ -36,6 +38,16 @@ type TokenSymbol = string;
 // TokenBuy[] sorted by oldest first
 type TokenBuys = Record<TokenSymbol, TokenBuy[]>;
 
+// Keeps same token types together and within that group sorts by oldest
+const oldestFirstInGroup = (a: ParsedEntry, b: ParsedEntry) => {
+  if (a.token !== b.token) return a.token > b.token ? 1 : -1;
+  return a.date > b.date ? 1 : -1;
+};
+
+const oldestFirst = (a: TokenBuy | ParsedEntry, b: TokenBuy | ParsedEntry) => {
+  return a.date > b.date ? 1 : -1;
+};
+
 const getTokenBuys = (parsedEntries: ParsedEntry[]): TokenBuys => {
   const tokenBuys: TokenBuys = parsedEntries
     .filter((e) => e.type === ActionType.BUY)
@@ -50,9 +62,7 @@ const getTokenBuys = (parsedEntries: ParsedEntry[]): TokenBuys => {
         amountOfToken: curr.amountOfToken,
       });
 
-      acc[curr.tokenSymbol].sort((a, b) => {
-        return a.date > b.date ? 1 : -1;
-      });
+      acc[curr.tokenSymbol].sort(oldestFirst);
 
       return acc;
     }, {} as TokenBuys);
@@ -95,11 +105,14 @@ const segmentBuys = (
 
 export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWithGains => {
   const tokenBuys = getTokenBuys(parsedEntries);
+  parsedEntries.sort(oldestFirstInGroup);
+
   const entriesWithGains: EntriesWithGains = [];
 
   for (const entry of parsedEntries) {
     if (entry.type === ActionType.BUY) {
       entriesWithGains.push({
+        token: entry.token,
         tokenSymbol: entry.tokenSymbol,
         type: ActionType.BUY,
         date: entry.date,
@@ -116,6 +129,7 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
         const costToBuy = buy.buyPrice * buy.amountOfToken + buy.fee;
 
         return {
+          token: entry.token,
           tokenSymbol: entry.tokenSymbol,
           type: ActionType.SELL,
           date: entry.date,

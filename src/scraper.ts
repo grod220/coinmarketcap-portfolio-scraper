@@ -80,5 +80,6 @@ export const scrapeCoinMarketCap = async (): Promise<RawEntry[]> => {
     await page.waitForSelector(SELECTOR.TABLE_ROW);
   }
 
+  // await browser.close();
   return allActions.flat();
 };
