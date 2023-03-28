@@ -1,0 +1,26 @@
+{
+  "name": "coin-mkt-cap-taxes",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "start:app": "yarn build && node build/app",
+    "start:chrome": "yarn build && node build/websocket",
+    "format": "prettier --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grod220/coinmarketcap-portfolio-scraper.git"
+  },
+  "author": "Gabe Rodriguez",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^18.11.17",
+    "date-fns": "^2.29.3",
+    "puppeteer": "^19.4.1",
+    "typescript": "^4.9.4"
+  },
+  "devDependencies": {
+    "prettier": "2.8.1"
+  }
+}
