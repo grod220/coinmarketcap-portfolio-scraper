@@ -11,6 +11,7 @@ interface BuyEntry {
   amountOfToken: number;
   buyPrice: number;
   fees: number;
+  totalCost: number;
 }
 
 interface SellEntry {
@@ -22,6 +23,8 @@ interface SellEntry {
   buyPrice: number;
   sellPrice: number;
   fees: number;
+  costToBuy: number;
+  totalSoldFor: number;
   capitalGainOrLoss: number;
   daysHeld: number;
 }
@@ -119,13 +122,14 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
         amountOfToken: entry.amountOfToken,
         buyPrice: entry.price,
         fees: entry.fee,
+        totalCost: entry.price * entry.amountOfToken + entry.fee,
       });
     } else {
       const { used, remaining } = segmentBuys(entry.amountOfToken, tokenBuys[entry.tokenSymbol]);
       tokenBuys[entry.tokenSymbol] = remaining;
 
       const sells: SellEntry[] = used.map((buy) => {
-        const soldFor = entry.price * buy.amountOfToken - entry.fee / used.length;
+        const totalSoldFor = entry.price * buy.amountOfToken - entry.fee / used.length;
         const costToBuy = buy.buyPrice * buy.amountOfToken + buy.fee;
 
         return {
@@ -133,11 +137,13 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
           tokenSymbol: entry.tokenSymbol,
           type: ActionType.SELL,
           date: entry.date,
-          amountOfToken: entry.amountOfToken,
+          amountOfToken: buy.amountOfToken,
           sellPrice: entry.price,
           buyPrice: buy.buyPrice,
           fees: buy.fee + entry.fee / used.length,
-          capitalGainOrLoss: soldFor - costToBuy,
+          costToBuy,
+          totalSoldFor,
+          capitalGainOrLoss: totalSoldFor - costToBuy,
           daysHeld: differenceInDays(entry.date, buy.date),
         };
       });

@@ -11,6 +11,8 @@ const headings = [
   'price',
   'token amount',
   'fee',
+  'cost to buy',
+  'total sold for',
   'capital gain/loss',
   'days held',
 ];
@@ -28,6 +30,7 @@ export const writeToCsv = async (entries: EntriesWithGains) => {
         entry.buyPrice,
         entry.amountOfToken,
         entry.fees,
+        entry.totalCost,
       ]);
     } else {
       data.push([
@@ -38,6 +41,8 @@ export const writeToCsv = async (entries: EntriesWithGains) => {
         entry.sellPrice,
         entry.amountOfToken,
         entry.fees,
+        entry.costToBuy,
+        entry.totalSoldFor,
         entry.capitalGainOrLoss,
         entry.daysHeld,
       ]);
