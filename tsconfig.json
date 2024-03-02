@@ -1,10 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": [
-      "ES2021",
-      "dom"
-    ],
+    "lib": ["ES2021", "dom"],
     "types": ["node"],
     "module": "NodeNext",
     "declaration": true,

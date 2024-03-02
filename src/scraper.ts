@@ -16,8 +16,8 @@ export interface RawEntry {
 // Extremely fragile selectors, but coinmarketcap did not provide any other fields/classes/ids to work with
 enum SELECTOR {
   TABLE_ROW = 'table > tbody > tr',
-  BACK_BUTTON = '.cmc-body-wrapper div:nth-child(1) > div > div > button',
-  TRASH_CAN_BUTTON = 'table > tbody > tr:nth-child(1) > td:nth-child(5) > div > button:nth-child(2)',
+  BACK_BUTTON = 'section > div > div > div > div > div > div > span',
+  TRASH_CAN_BUTTON = 'svg:nth-child(2) > use',
 }
 
 export const scrapeCoinMarketCap = async (): Promise<RawEntry[]> => {
@@ -44,14 +44,12 @@ export const scrapeCoinMarketCap = async (): Promise<RawEntry[]> => {
       const table = Array.from(document.querySelectorAll('table'))[0];
       // Skip first row (headers)
       const rows = Array.from(table.querySelectorAll('tr')).slice(1);
+      const token = document
+        .querySelector('.cmc-body-wrapper section p')
+        ?.textContent?.split(' (')[0];
 
       const res = [];
       for (const row of rows) {
-        const token = document
-          .querySelector(
-            '.cmc-body-wrapper > div > div > div:nth-child(2) > div > div > div:nth-child(1) > div > div > div > p',
-          )
-          ?.textContent?.split(' (')[0];
         row.click();
         const matches = document
           .querySelector('.open > div > div > div:nth-child(4) > div.content')

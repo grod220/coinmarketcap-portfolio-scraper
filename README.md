@@ -14,13 +14,13 @@ It does a few things:
 
 - Run `yarn install`
 - In one terminal window:
-    - Run `yarn start:chrome`
-    - In the browser window that pops up, log into your portfolio at https://coinmarketcap.com/portfolio-tracker/
-    - After a successful login, just leave it open
+  - Run `yarn start:chrome`
+  - In the browser window that pops up, log into your portfolio at https://coinmarketcap.com/portfolio-tracker/
+  - After a successful login, just leave it open
 - In another terminal window:
-    - Run `yarn start:app`. This may take a minute to scrape every trade from each of your assets.
-    - When finished, this terminal window will show a success message.
-    - Look for `report.csv` in the base directory
+  - Run `yarn start:app`. This may take a minute to scrape every trade from each of your assets.
+  - When finished, this terminal window will show a success message.
+  - Look for `report.csv` in the base directory
 
 ### Note
 
