@@ -1,4 +1,4 @@
-import { ActionType, ParsedEntry } from './parser';
+import { ActionType, ParsedEntry } from './parser.js';
 import { differenceInDays } from 'date-fns';
 
 export type EntriesWithGains = (BuyEntry | SellEntry)[];
@@ -41,79 +41,82 @@ type TokenSymbol = string;
 // TokenBuy[] sorted by oldest first
 type TokenBuys = Record<TokenSymbol, TokenBuy[]>;
 
-// Keeps same token types together and within that group sorts by oldest
-const oldestFirstInGroup = (a: ParsedEntry, b: ParsedEntry) => {
-  if (a.token !== b.token) return a.token > b.token ? 1 : -1;
-  return a.date > b.date ? 1 : -1;
-};
-
-const oldestFirst = (a: TokenBuy | ParsedEntry, b: TokenBuy | ParsedEntry) => {
-  return a.date > b.date ? 1 : -1;
-};
-
-const getTokenBuys = (parsedEntries: ParsedEntry[]): TokenBuys => {
-  const tokenBuys: TokenBuys = parsedEntries
-    .filter((e) => e.type === ActionType.BUY)
-    .reduce((acc, curr) => {
-      if (!acc[curr.tokenSymbol]) {
-        acc[curr.tokenSymbol] = [];
-      }
-      acc[curr.tokenSymbol].push({
-        date: curr.date,
-        buyPrice: curr.price,
-        fee: curr.fee,
-        amountOfToken: curr.amountOfToken,
-      });
-
-      acc[curr.tokenSymbol].sort(oldestFirst);
-
-      return acc;
-    }, {} as TokenBuys);
-
-  return tokenBuys;
-};
+const FLOAT_EPSILON = 1e-9;
 
 const segmentBuys = (
   sellAmount: number,
   tokenBuys: TokenBuy[],
-): { used: TokenBuy[]; remaining: TokenBuy[] } => {
-  let used = [];
-  let remaining = [];
+): { used: TokenBuy[]; remaining: TokenBuy[]; unmatchedSellAmount: number } => {
+  let used: TokenBuy[] = [];
+  let remaining: TokenBuy[] = [];
+  let remainingSellAmount = sellAmount;
+
   for (const buy of tokenBuys) {
-    if (sellAmount > 0) {
-      if (buy.amountOfToken <= sellAmount) {
+    if (remainingSellAmount > FLOAT_EPSILON) {
+      if (buy.amountOfToken <= remainingSellAmount + FLOAT_EPSILON) {
         used.push(buy);
-        sellAmount -= buy.amountOfToken;
+        remainingSellAmount -= buy.amountOfToken;
       } else {
+        const amountUsed = remainingSellAmount;
+        const feeRatio = amountUsed / buy.amountOfToken;
         used.push({
           date: buy.date,
           buyPrice: buy.buyPrice,
-          fee: buy.fee * (sellAmount / buy.amountOfToken),
-          amountOfToken: sellAmount,
+          fee: buy.fee * feeRatio,
+          amountOfToken: amountUsed,
         });
         remaining.push({
           date: buy.date,
           buyPrice: buy.buyPrice,
-          fee: buy.fee * (1 - sellAmount / buy.amountOfToken),
-          amountOfToken: buy.amountOfToken - sellAmount,
+          fee: buy.fee * (1 - feeRatio),
+          amountOfToken: buy.amountOfToken - amountUsed,
         });
-        sellAmount = 0;
+        remainingSellAmount = 0;
       }
     } else {
       remaining.push(buy);
     }
   }
-  return { used, remaining };
+
+  return {
+    used,
+    remaining,
+    unmatchedSellAmount: Math.max(remainingSellAmount, 0),
+  };
 };
 
 export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWithGains => {
-  const tokenBuys = getTokenBuys(parsedEntries);
-  parsedEntries.sort(oldestFirstInGroup);
+  const tokenBuys: TokenBuys = {};
+  const sortedEntries = [...parsedEntries]
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => {
+      const dateDelta = a.entry.date.getTime() - b.entry.date.getTime();
+      if (dateDelta !== 0) return dateDelta;
+      if (a.entry.tokenSymbol !== b.entry.tokenSymbol) {
+        return a.entry.tokenSymbol.localeCompare(b.entry.tokenSymbol);
+      }
+      // Keep processing deterministic for identical timestamp + token rows.
+      if (a.entry.type !== b.entry.type) {
+        return a.entry.type === ActionType.BUY ? -1 : 1;
+      }
+      return a.index - b.index;
+    })
+    .map(({ entry }) => entry);
 
   const entriesWithGains: EntriesWithGains = [];
 
-  for (const entry of parsedEntries) {
+  for (const entry of sortedEntries) {
     if (entry.type === ActionType.BUY) {
+      if (!tokenBuys[entry.tokenSymbol]) {
+        tokenBuys[entry.tokenSymbol] = [];
+      }
+      tokenBuys[entry.tokenSymbol].push({
+        date: entry.date,
+        buyPrice: entry.price,
+        fee: entry.fee,
+        amountOfToken: entry.amountOfToken,
+      });
+
       entriesWithGains.push({
         token: entry.token,
         tokenSymbol: entry.tokenSymbol,
@@ -125,11 +128,29 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
         totalCost: entry.price * entry.amountOfToken + entry.fee,
       });
     } else {
-      const { used, remaining } = segmentBuys(entry.amountOfToken, tokenBuys[entry.tokenSymbol]);
+      const currentBuys = tokenBuys[entry.tokenSymbol] ?? [];
+      const availableAmount = currentBuys.reduce((sum, buy) => sum + buy.amountOfToken, 0);
+      const { used, remaining, unmatchedSellAmount } = segmentBuys(entry.amountOfToken, currentBuys);
+
+      if (unmatchedSellAmount > FLOAT_EPSILON) {
+        throw new Error(
+          `Sell amount exceeds available buys for ${entry.tokenSymbol} on ${entry.date.toISOString()} ` +
+            `(sell=${entry.amountOfToken}, available=${availableAmount}, unmatched=${unmatchedSellAmount}).`,
+        );
+      }
+
+      if (used.length === 0) {
+        throw new Error(
+          `Unable to match sell for ${entry.tokenSymbol} on ${entry.date.toISOString()}: no prior buy lots found.`,
+        );
+      }
+
       tokenBuys[entry.tokenSymbol] = remaining;
 
+      const matchedSellAmount = used.reduce((sum, buy) => sum + buy.amountOfToken, 0);
       const sells: SellEntry[] = used.map((buy) => {
-        const totalSoldFor = entry.price * buy.amountOfToken - entry.fee / used.length;
+        const sellFeeShare = entry.fee * (buy.amountOfToken / matchedSellAmount);
+        const totalSoldFor = entry.price * buy.amountOfToken - sellFeeShare;
         const costToBuy = buy.buyPrice * buy.amountOfToken + buy.fee;
 
         return {
@@ -140,7 +161,7 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
           amountOfToken: buy.amountOfToken,
           sellPrice: entry.price,
           buyPrice: buy.buyPrice,
-          fees: buy.fee + entry.fee / used.length,
+          fees: buy.fee + sellFeeShare,
           costToBuy,
           totalSoldFor,
           capitalGainOrLoss: totalSoldFor - costToBuy,

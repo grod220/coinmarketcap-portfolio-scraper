@@ -1,18 +1,23 @@
-import { parseScrapedData } from './parser';
-import { calculateCapitalGains } from './cap-gains';
-import { writeToCsv } from './csv';
-import { scrapeCoinMarketCap } from './scraper';
+import { readTransactionsCsv } from './csv-reader.js';
+import { calculateCapitalGains } from './cap-gains.js';
+import { writeToCsv } from './csv.js';
+
+const inputCsvPath = process.argv[2];
+const outputCsvPath = process.argv[3] ?? './report.csv';
+
+if (!inputCsvPath) {
+  console.error('Usage: node build/app.js <path-to-transactions.csv> [output-report-path]');
+  process.exit(1);
+}
 
 (async () => {
   try {
-    const rawEntries = await scrapeCoinMarketCap();
-    // If want to write locally to cache
-    // await writeFile('src/rawEntries.ts', JSON.stringify(rawEntries, null, 2), 'utf-8');
-    const parsedEntries = parseScrapedData(rawEntries);
+    const parsedEntries = await readTransactionsCsv(inputCsvPath);
     const entriesWithGains = calculateCapitalGains(parsedEntries);
-    await writeToCsv(entriesWithGains);
-    console.log('Success 🎉. See output: "./report.csv".');
+    await writeToCsv(entriesWithGains, outputCsvPath);
+    console.log(`Processed ${parsedEntries.length} transactions. See output: "${outputCsvPath}".`);
   } catch (e) {
     console.error(e);
+    process.exitCode = 1;
   }
 })();

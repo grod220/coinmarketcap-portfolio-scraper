@@ -1,5 +1,5 @@
-import { EntriesWithGains } from './cap-gains';
-import { ActionType } from './parser';
+import { EntriesWithGains } from './cap-gains.js';
+import { ActionType } from './parser.js';
 import { format } from 'date-fns';
 import { writeFile } from 'fs/promises';
 
@@ -17,7 +17,7 @@ const headings = [
   'days held',
 ];
 
-export const writeToCsv = async (entries: EntriesWithGains) => {
+export const writeToCsv = async (entries: EntriesWithGains, outputPath = './report.csv') => {
   const data: (string | number)[][] = [headings];
 
   for (const entry of entries) {
@@ -26,7 +26,7 @@ export const writeToCsv = async (entries: EntriesWithGains) => {
         entry.token,
         entry.tokenSymbol,
         entry.type,
-        format(entry.date, 'MMM-d-y h:m a'),
+        format(entry.date, 'MMM-d-y h:mm a'),
         entry.buyPrice,
         entry.amountOfToken,
         entry.fees,
@@ -37,7 +37,7 @@ export const writeToCsv = async (entries: EntriesWithGains) => {
         entry.token,
         entry.tokenSymbol,
         entry.type,
-        format(entry.date, 'MMM-d-y h:m a'),
+        format(entry.date, 'MMM-d-y h:mm a'),
         entry.sellPrice,
         entry.amountOfToken,
         entry.fees,
@@ -49,6 +49,12 @@ export const writeToCsv = async (entries: EntriesWithGains) => {
     }
   }
 
-  const csvFormat = data.map((row) => row.join(',')).join('\n');
-  await writeFile('./report.csv', csvFormat);
+  const escapeCsvField = (field: string | number): string => {
+    const value = String(field);
+    if (!/[",\n\r]/.test(value)) return value;
+    return `"${value.replaceAll('"', '""')}"`;
+  };
+
+  const csvFormat = data.map((row) => row.map(escapeCsvField).join(',')).join('\n');
+  await writeFile(outputPath, csvFormat);
 };

@@ -1,28 +1,46 @@
-# CoinMarketCap Portfolio Scraper
+# CoinMarketCap Capital Gains CLI
 
-Tax day coming up and you have no idea how to report your trades you track on CoinMarketCap portfolio tracker? Don't
-worry, I've been there. This tool is for you! 👆
+This tool reads a CoinMarketCap transactions CSV and calculates FIFO cost basis, capital gain/loss, and holding days.
 
-It does a few things:
+## What It Does
 
-- Scrapes all portfolio trades from your CoinMarketCap portfolio
-- Parses the raw data
-- Augments with calculations: capital gain/loss + days held (helpful for tax filing)
-- Exports to a csv for importing into Excel or Google sheets 🎉
+- Parses portfolio transaction CSV exports.
+- Matches sells to prior buys using FIFO lots.
+- Calculates:
+  - `cost to buy`
+  - `total sold for`
+  - `capital gain/loss`
+  - `days held`
+- Writes a `report.csv` file you can use in spreadsheets.
 
-### How to use
+## Install
 
-- Run `yarn install`
-- In one terminal window:
-  - Run `yarn start:chrome`
-  - In the browser window that pops up, log into your portfolio at https://coinmarketcap.com/portfolio-tracker/
-  - After a successful login, just leave it open
-- In another terminal window:
-  - Run `yarn start:app`. This may take a minute to scrape every trade from each of your assets.
-  - When finished, this terminal window will show a success message.
-  - Look for `report.csv` in the base directory
+```bash
+npm install
+```
 
-### Note
+## Usage
 
-Sadly, CoinMarketCap doesn't offer an API to get the underlying porfolio information. This means this app can break if
-they change the page's html structure. Would require updating the selectors in `parser.ts`.
+```bash
+npm start -- <path-to-transactions.csv> [output-report-path]
+```
+
+Examples:
+
+```bash
+npm start -- /Users/you/Desktop/Main_for_all/Main_transactions.csv
+npm start -- /Users/you/Desktop/Main_for_all/Main_transactions.csv /Users/you/Desktop/report.csv
+```
+
+If `output-report-path` is not provided, output defaults to `./report.csv`.
+
+## Notes
+
+- The app validates that every sell can be matched to prior buys. If a sell exceeds available inventory, it throws an explicit error instead of silently dropping unmatched amounts.
+- Some exports can include rounding drift. If this happens, inspect the flagged transaction in your source CSV and adjust data before rerunning.
+
+## Test
+
+```bash
+npm test
+```

@@ -1,11 +1,11 @@
 {
   "name": "coin-mkt-cap-taxes",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "Capital gains calculator for CoinMarketCap portfolio exports",
   "scripts": {
     "build": "tsc",
-    "start:app": "yarn build && node build/app",
-    "start:chrome": "yarn build && node build/websocket",
+    "start": "npm run build && node build/app",
+    "test": "npm run build && node --test tests/*.test.cjs",
     "format": "prettier --write ."
   },
   "repository": {
@@ -15,12 +15,11 @@
   "author": "Gabe Rodriguez",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^18.11.17",
-    "date-fns": "^2.29.3",
-    "puppeteer": "^19.4.1",
-    "typescript": "^4.9.4"
+    "date-fns": "^4"
   },
   "devDependencies": {
-    "prettier": "2.8.1"
+    "@types/node": "^22",
+    "typescript": "^5",
+    "prettier": "^3"
   }
 }
