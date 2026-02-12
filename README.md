@@ -44,3 +44,10 @@ If `output-report-path` is not provided, output defaults to `./report.csv`.
 ```bash
 npm test
 ```
+
+## Quality Checks
+
+```bash
+npm run lint
+npm run format:check
+```
