@@ -1,5 +1,5 @@
-import { readFile } from 'fs/promises';
-import { ActionType, ParsedEntry } from './parser.js';
+import { readFile } from 'node:fs/promises';
+import { ActionType, type ParsedEntry } from './parser.js';
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
 

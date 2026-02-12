@@ -1,7 +1,7 @@
-import { EntriesWithGains } from './cap-gains.js';
+import type { EntriesWithGains } from './cap-gains.js';
 import { ActionType } from './parser.js';
 import { format } from 'date-fns';
-import { writeFile } from 'fs/promises';
+import { writeFile } from 'node:fs/promises';
 
 const headings = [
   'token',

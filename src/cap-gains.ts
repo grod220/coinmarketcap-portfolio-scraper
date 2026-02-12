@@ -1,4 +1,4 @@
-import { ActionType, ParsedEntry } from './parser.js';
+import { ActionType, type ParsedEntry } from './parser.js';
 import { differenceInDays } from 'date-fns';
 
 export type EntriesWithGains = (BuyEntry | SellEntry)[];
@@ -47,8 +47,8 @@ const segmentBuys = (
   sellAmount: number,
   tokenBuys: TokenBuy[],
 ): { used: TokenBuy[]; remaining: TokenBuy[]; unmatchedSellAmount: number } => {
-  let used: TokenBuy[] = [];
-  let remaining: TokenBuy[] = [];
+  const used: TokenBuy[] = [];
+  const remaining: TokenBuy[] = [];
   let remainingSellAmount = sellAmount;
 
   for (const buy of tokenBuys) {
@@ -130,7 +130,10 @@ export const calculateCapitalGains = (parsedEntries: ParsedEntry[]): EntriesWith
     } else {
       const currentBuys = tokenBuys[entry.tokenSymbol] ?? [];
       const availableAmount = currentBuys.reduce((sum, buy) => sum + buy.amountOfToken, 0);
-      const { used, remaining, unmatchedSellAmount } = segmentBuys(entry.amountOfToken, currentBuys);
+      const { used, remaining, unmatchedSellAmount } = segmentBuys(
+        entry.amountOfToken,
+        currentBuys,
+      );
 
       if (unmatchedSellAmount > FLOAT_EPSILON) {
         throw new Error(
